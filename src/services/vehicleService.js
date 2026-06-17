@@ -8,9 +8,10 @@ import { API_ENDPOINTS } from 'constants/api';
  * Fetch paginated vehicle history.
  * @param {{ page?: number, limit?: number, from?: string, to?: string }} params
  */
-export async function getVehicleHistory(params = {}) {
+export async function getVehicleHistory(params = { limit: 1000 }) {
   const { data } = await apiClient.get(API_ENDPOINTS.VEHICLES.HISTORY, { params });
   return data; // expected: { items: [], total: number, page: number }
+}
 }
 
 /**
