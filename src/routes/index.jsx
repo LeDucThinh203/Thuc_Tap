@@ -32,8 +32,8 @@ const AdminDashboard = lazy(() => import('features/dashboard/DashboardPage'));
 const AdminAnalytics = lazy(() => import('features/analytics/AnalyticsPage'));
 const AdminVehicles  = lazy(() => import('features/vehicles/VehiclesPage'));
 const AdminAIChat    = lazy(() => import('features/ai-assistant/AIChatPage'));
+const AdminRoles  = lazy(() => import('features/dashboard/components/Role'));
 const AdminSettings  = lazy(() => import('features/settings/SettingsPage'));
-
 // User pages
 const UserDashboard  = lazy(() => import('features/dashboard/UserDashboardPage'));
 const UserMyVehicle  = lazy(() => import('features/vehicles/VehiclesPage'));
@@ -83,7 +83,8 @@ const router = createBrowserRouter([
           { path: ROUTES.ADMIN.ANALYTICS,    element: page(AdminAnalytics) },
           { path: ROUTES.ADMIN.VEHICLES,     element: page(AdminVehicles)  },
           { path: ROUTES.ADMIN.AI_ASSISTANT, element: page(AdminAIChat)    },
-          { path: ROUTES.ADMIN.SETTINGS,     element: page(AdminSettings)  },
+          { path: ROUTES.ADMIN.ROLES,       element: page(AdminRoles) },
+            { path: ROUTES.ADMIN.SETTINGS,     element: page(AdminSettings) },
           // Default /admin → dashboard
           { path: ROUTES.ADMIN.ROOT, element: <Navigate to={ROUTES.ADMIN.DASHBOARD} replace /> },
         ],

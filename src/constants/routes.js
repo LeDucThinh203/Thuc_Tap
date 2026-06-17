@@ -21,6 +21,7 @@ export const ROUTES = {
     VEHICLES:     '/admin/vehicles',
     AI_ASSISTANT: '/admin/ai-assistant',
     SETTINGS:     '/admin/settings',
+    ROLES:        '/admin/roles',
   },
 
   // ── User routes ────────────────────────────────

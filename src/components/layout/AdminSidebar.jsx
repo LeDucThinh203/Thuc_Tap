@@ -11,19 +11,18 @@
 import { useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, BarChart2, Car, Bot, Settings,
-  ParkingSquare, LogOut, ChevronLeft, X,
+  LayoutDashboard, BarChart2, Car, Bot, Settings, ParkingSquare, LogOut, ChevronLeft, X, Users,
 } from 'lucide-react';
 import { useAuth }  from 'hooks/useAuth';
 import { ROLES }    from 'constants/roles';
 import { ROUTES }   from 'constants/routes';
 
 // ── Navigation config ──────────────────────────────────────────
-const MAIN_NAV = [
-  { to: ROUTES.ADMIN.DASHBOARD,    icon: LayoutDashboard, label: 'Dashboard'     },
-  { to: ROUTES.ADMIN.ANALYTICS,    icon: BarChart2,        label: 'Analytics'     },
-  { to: ROUTES.ADMIN.VEHICLES,     icon: Car,              label: 'Phương tiện'   },
-  { to: ROUTES.ADMIN.AI_ASSISTANT, icon: Bot,              label: 'AI Assistant'  },
+const BASE_NAV = [
+  { to: ROUTES.ADMIN.DASHBOARD,    icon: LayoutDashboard, label: 'Dashboard' },
+  { to: ROUTES.ADMIN.ANALYTICS,    icon: BarChart2,        label: 'Analytics' },
+  { to: ROUTES.ADMIN.VEHICLES,     icon: Car,              label: 'Phương tiện' },
+  { to: ROUTES.ADMIN.AI_ASSISTANT, icon: Bot,              label: 'AI Assistant' },
 ];
 
 const ADMIN_NAV = [
@@ -52,7 +51,19 @@ function SidebarNavItem({ to, icon: Icon, label, collapsed, onClick }) {
 // ── Main component ─────────────────────────────────────────────
 export default function AdminSidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
   const { user, role, logout } = useAuth();
+  console.log('🔧 AdminSidebar role:', role);
   const navigate = useNavigate();
+
+  // Normalize role for comparison (case‑insensitive)
+  const normalizedRole = typeof role === 'string' ? role.toLowerCase() : '';
+  const isAdmin = normalizedRole === ROLES.ADMIN;
+
+  // Build navigation items: base + conditional role link for admin
+  const navItems = [...BASE_NAV];
+  if (isAdmin) {
+    // Insert Role link right after AI Assistant (index 4)
+    navItems.splice(4, 0, { to: ROUTES.ADMIN.ROLES, icon: Users, label: 'Quản lý vai trò' });
+  }
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -63,8 +74,10 @@ export default function AdminSidebar({ collapsed, onToggle, mobileOpen, onMobile
     .charAt(0).toUpperCase();
 
   // Shared sidebar body (reused for both mobile and desktop)
+  // DEBUG: show current role
   const SidebarBody = ({ onClose }) => (
     <div className="flex flex-col h-full">
+      <p style={{ color: 'var(--color-text-primary)', marginLeft: '16px' }}>Role: {role}</p>
 
       {/* ── Logo ─────────────────────────────────────────── */}
       <div
@@ -111,10 +124,12 @@ export default function AdminSidebar({ collapsed, onToggle, mobileOpen, onMobile
           </p>
         )}
 
-        {MAIN_NAV.map((item) => (
+        {navItems.map(({ to, icon: Icon, label }) => (
           <SidebarNavItem
-            key={item.to}
-            {...item}
+            key={to}
+            to={to}
+            icon={Icon}
+            label={label}
             collapsed={collapsed}
             onClick={onClose}
           />
@@ -126,8 +141,7 @@ export default function AdminSidebar({ collapsed, onToggle, mobileOpen, onMobile
             <div className="pt-4 pb-2">
               <div className="divider" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
               {!collapsed && (
-                <p className="px-3 mt-3 mb-2 text-2xs font-semibold uppercase tracking-widest"
-                   style={{ color: 'rgba(148,163,184,0.6)' }}>
+                <p className="px-3 mt-3 mb-2 text-2xs font-semibold uppercase tracking-widest" style={{ color: 'rgba(148,163,184,0.6)' }}>
                   Hệ thống
                 </p>
               )}

@@ -4,7 +4,7 @@
  */
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, BarChart3, Car, Bot, Settings, ParkingSquare, LogOut, ChevronLeft,
+  LayoutDashboard, BarChart3, Car, Bot, Settings, ParkingSquare, LogOut, ChevronLeft, Users,
 } from 'lucide-react';
 import { useAuth }  from 'hooks/useAuth';
 import { ROUTES }   from 'constants/routes';
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
 
 const ADMIN_ITEMS = [
   { to: ROUTES.SETTINGS, icon: Settings, label: 'Cài đặt' },
+  { to: ROUTES.ADMIN.ROLES, icon: Users, label: 'Quản lý vai trò' },
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {

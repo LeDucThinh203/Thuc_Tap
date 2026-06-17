@@ -68,6 +68,12 @@ export const MOCK_RECENT_VEHICLES = [
   { id: 9, plate: '75A-111.22', zone: 'Zone B', entryTime: '10:45 AM', exitTime: '11:30 AM', status: 'Đã rời' },
   { id: 10, plate: '30E-555.55', zone: 'Zone C', entryTime: '10:30 AM', exitTime: '—', status: 'Đang đỗ' },
 ];
+export const MOCK_USERS = [
+  { id: 1, username: 'admin1', role: 'admin', active: true },
+  { id: 2, username: 'operator1', role: 'operator', active: true },
+  { id: 3, username: 'user1', role: 'user', active: true },
+];
+
 
 export function generateMockSlots() {
   const slots = [];
