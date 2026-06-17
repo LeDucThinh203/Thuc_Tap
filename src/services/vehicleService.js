@@ -12,7 +12,7 @@ export async function getVehicleHistory(params = { limit: 1000 }) {
   const { data } = await apiClient.get(API_ENDPOINTS.VEHICLES.HISTORY, { params });
   return data; // expected: { items: [], total: number, page: number }
 }
-}
+
 
 /**
  * Search vehicles by license plate.
