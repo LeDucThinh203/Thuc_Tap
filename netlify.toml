@@ -3,8 +3,8 @@
   command = "npm run build"
   publish = "dist"
   [build.environment]
-    VITE_USE_MOCK_DATA = "true"
-    VITE_API_BASE_URL = ""
+    VITE_USE_MOCK_DATA = "false"
+    VITE_API_BASE_URL = "https://ebhguaykmc.execute-api.ap-southeast-1.amazonaws.com"
 
 [dev]
   command = "npm run dev"
