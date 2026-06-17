@@ -74,7 +74,22 @@ export function useParkingData(refreshInterval = DEFAULT_REFRESH_MS) {
         lastUpdated: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       });
       setTraffic(MOCK_TRAFFIC);
-      setRecentVehicles(recentItems);
+      // Map recent items to the shape expected by DashboardRecentVehicles
+      const recentMapped = recentItems.map((item) => ({
+        // Preserve original id as event_id for React key
+        event_id: item.id,
+        // Plate display
+        display_plate_number: item.plate,
+        // Direction based on status (IN for parked, OUT for left)
+        direction: item.status === 'Đang đỗ' ? 'IN' : 'OUT',
+        // Timestamp – use entryTime for IN, exitTime for OUT
+        created_at: item.status === 'Đang đỗ' ? item.entryTime : item.exitTime,
+        // Camera / zone info
+        camera_id: item.zone,
+        // Keep other fields if needed
+        ...item,
+      }));
+      setRecentVehicles(recentMapped);
     } catch (err) {
       console.error("Parking API failed:", err);
       setError(err.message || "Đã xảy ra lỗi khi tải dữ liệu từ API.");

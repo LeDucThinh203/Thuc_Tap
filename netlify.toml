@@ -13,6 +13,11 @@
   to = "http://localhost:4000/:splat"
   status = 200
 
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
 # SPA fallback – route all non‑file requests to index.html
 [[redirects]]
   from = "/*"
