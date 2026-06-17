@@ -1,0 +1,223 @@
+/* ── Google Fonts (must be before @tailwind) ───────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --sidebar-width:       240px;
+  --sidebar-collapsed:   72px;
+  --topbar-height:       64px;
+  --radius-card:         12px;
+  --radius-btn:          8px;
+  --transition-fast:     120ms cubic-bezier(0.4,0,0.2,1);
+  --transition-base:     220ms cubic-bezier(0.4,0,0.2,1);
+  --transition-slow:     350ms cubic-bezier(0.4,0,0.2,1);
+
+  /* Light tokens */
+  --color-bg:            #F8FAFC;
+  --color-surface:       #FFFFFF;
+  --color-border:        #E2E8F0;
+  --color-text-primary:  #0F172A;
+  --color-text-muted:    #64748B;
+  --color-primary:       #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-sidebar-bg:    #0F172A;
+  --color-sidebar-text:  #CBD5E1;
+  --color-sidebar-hover: rgba(255,255,255,0.07);
+  --color-sidebar-active:#2563EB;
+}
+
+.dark {
+  --color-bg:            #0B0F1A;
+  --color-surface:       #141927;
+  --color-border:        #1E293B;
+  --color-text-primary:  #F1F5F9;
+  --color-text-muted:    #64748B;
+  --color-sidebar-bg:    #080D18;
+  --color-sidebar-text:  #94A3B8;
+  --color-sidebar-hover: rgba(255,255,255,0.05);
+  --color-sidebar-active:#2563EB;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { @apply box-border; }
+
+  html { @apply scroll-smooth antialiased; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    transition: background-color var(--transition-base), color var(--transition-base);
+  }
+
+  h1 { @apply text-2xl font-bold tracking-tight; }
+  h2 { @apply text-xl  font-semibold; }
+  h3 { @apply text-lg  font-semibold; }
+  h4 { @apply text-base font-medium; }
+
+  /* Focus ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+}
+
+/* ── Component Layer ───────────────────────────────────────── */
+@layer components {
+
+  /* ── Card ─────────────────────────────── */
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    @apply p-5 transition-shadow duration-200;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+  /* ── Sidebar Nav Item ─────────────────── */
+  .nav-item {
+    @apply relative flex items-center gap-3 px-3 py-2.5 rounded-lg
+           text-sm font-medium transition-all duration-150 cursor-pointer select-none;
+    color: var(--color-sidebar-text);
+  }
+  .nav-item:hover {
+    background-color: var(--color-sidebar-hover);
+    color: #FFFFFF;
+  }
+  .nav-item.active {
+    background-color: var(--color-sidebar-active);
+    color: #FFFFFF;
+    @apply shadow-sm;
+  }
+  /* Active left accent bar */
+  .nav-item.active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-white;
+  }
+
+  /* ── Topbar Nav Item (UserLayout) ─────── */
+  .topnav-item {
+    @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+           transition-all duration-150 cursor-pointer;
+    color: var(--color-text-muted);
+  }
+  .topnav-item:hover {
+    background-color: var(--color-border);
+    color: var(--color-text-primary);
+  }
+  .topnav-item.active {
+    background-color: #EFF6FF;
+    color: var(--color-primary);
+    @apply font-semibold;
+  }
+  .dark .topnav-item.active {
+    background-color: rgba(37, 99, 235, 0.15);
+    color: #93C5FD;
+  }
+
+  /* ── Button base ─────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium
+           transition-all duration-150 cursor-pointer select-none
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500;
+    border-radius: var(--radius-btn);
+  }
+  .btn:disabled { @apply opacity-50 cursor-not-allowed; }
+
+  .btn-primary {
+    @apply btn px-4 py-2 text-sm text-white;
+    background-color: var(--color-primary);
+  }
+  .btn-primary:hover:not(:disabled) { background-color: var(--color-primary-hover); }
+
+  .btn-ghost {
+    @apply btn px-3 py-2 text-sm;
+    color: var(--color-text-muted);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  /* ── Slot status badges ──────────────── */
+  .slot-available { @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400; }
+  .slot-occupied  { @apply bg-red-100    text-red-700    dark:bg-red-900/30    dark:text-red-400;     }
+  .slot-reserved  { @apply bg-amber-100  text-amber-700  dark:bg-amber-900/30  dark:text-amber-400;   }
+
+  /* ── Page layout containers ──────────── */
+  .page-container  { @apply max-w-7xl mx-auto px-4 sm:px-6 py-6; }
+  .page-header     { @apply mb-6; }
+  .page-title      { @apply text-xl font-bold; color: var(--color-text-primary); }
+  .page-subtitle   { @apply text-sm mt-0.5; color: var(--color-text-muted); }
+
+  /* ── Divider ─────────────────────────── */
+  .divider { border-color: var(--color-border); @apply border-t my-2; }
+
+  /* ── Scrollbar ───────────────────────── */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+  }
+  .dark .scrollbar-thin { scrollbar-color: #334155 transparent; }
+
+  /* ── Skeleton loader ─────────────────── */
+  .skeleton {
+    @apply rounded-lg animate-pulse;
+    background: linear-gradient(90deg, var(--color-border) 25%, color-mix(in srgb, var(--color-border) 60%, transparent) 50%, var(--color-border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* ── Mobile overlay ──────────────────── */
+  .mobile-overlay {
+    @apply fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden;
+  }
+}
+
+/* ── Utility Layer ─────────────────────────────────────────── */
+@layer utilities {
+  .animate-fade-in  {
+    animation: fadeIn var(--transition-base) both;
+  }
+  .animate-slide-left {
+    animation: slideLeft var(--transition-base) both;
+  }
+  .animate-slide-up {
+    animation: slideUp var(--transition-base) both;
+  }
+
+  /* Sidebar transition */
+  .sidebar-transition {
+    transition: width var(--transition-base),
+                transform var(--transition-base);
+  }
+}
+
+/* ── Keyframes ─────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Hide Browser Native Password Reveal Eye ────────────────── */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

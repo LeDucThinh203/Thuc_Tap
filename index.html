@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO -->
+    <title>Smart Parking System — Quản lý bãi đỗ xe thông minh</title>
+    <meta name="description" content="Hệ thống quản lý bãi đỗ xe thông minh với giám sát giao thông thời gian thực, tích hợp AWS IoT Core và Amazon Bedrock AI." />
+    <meta name="theme-color" content="#2563EB" />
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700&display=swap" rel="stylesheet" />
+
+    <!--
+      Anti-FOUC: chỉ áp dụng dark nếu user đã tự chọn dark trước đó.
+      Mặc định luôn là light mode.
+    -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('sp-theme');
+          if (saved === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+          // Không dùng system preference — default là light
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
