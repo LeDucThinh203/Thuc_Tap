@@ -1,5 +1,5 @@
+# netlify.toml – valid configuration for Vite/React SPA
 [build]
-  base = "FRONT_END"
   command = "npm run build"
   publish = "dist"
 
@@ -7,12 +7,13 @@
   command = "npm run dev"
   port = 5173
 
+# Proxy API during local dev (optional)
 [[redirects]]
   from = "/api/*"
   to = "http://localhost:4000/:splat"
   status = 200
 
-# SPA fallback: route all non‑file requests to index.html
+# SPA fallback – route all non‑file requests to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
