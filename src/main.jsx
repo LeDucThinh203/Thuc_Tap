@@ -28,6 +28,7 @@ Amplify.configure({
       ...(isValidIdentityPool ? { identityPoolId } : {}),
       loginWith: {
         email: true,
+        phone: false,
       },
     },
   },

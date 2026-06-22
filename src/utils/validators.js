@@ -21,6 +21,13 @@ export function validatePassword(value) {
   return null;
 }
 
+/** Validate 6-digit OTP code from Cognito. */
+export function validateOtp(value) {
+  if (!value?.trim()) return 'Vui lòng nhập mã OTP.';
+  if (!/^\d{6}$/.test(value.trim())) return 'Mã OTP phải gồm 6 chữ số.';
+  return null;
+}
+
 // ── Vehicle ──────────────────────────────────────────────────
 
 /**

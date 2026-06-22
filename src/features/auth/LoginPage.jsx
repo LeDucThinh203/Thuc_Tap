@@ -2,8 +2,8 @@
  * LoginPage.jsx — Light mode professional login page.
  * Split layout: left panel (branding) + right panel (form)
  */
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ParkingSquare, Sun, Moon, Eye, EyeOff, Car, Activity, Shield } from 'lucide-react';
 import { useAuth }  from 'hooks/useAuth';
 import { useTheme } from 'context/ThemeContext';
@@ -30,17 +30,27 @@ export default function LoginPage() {
   const { login }               = useAuth();
   const { toggleTheme, isDark } = useTheme();
   const navigate                = useNavigate();
+  const location                = useLocation();
 
-  const [username,  setUsername]  = useState('');
+  const [identifier, setIdentifier] = useState(location.state?.email || '');
   const [password,  setPassword]  = useState('');
   const [showPwd,   setShowPwd]   = useState(false);
   const [errors,    setErrors]    = useState({});
   const [loading,   setLoading]   = useState(false);
   const [authError, setAuthError] = useState('');
+  const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || '');
+
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setSuccessMsg(location.state.successMessage);
+    }
+  }, [location.state]);
 
   const validate = () => {
     const errs = {};
-    if (!username) errs.username = 'Vui lòng nhập tên đăng nhập';
+    if (!identifier.trim()) {
+      errs.identifier = 'Vui lòng nhập Tên tài khoản hoặc Email';
+    }
     const pErr = validatePassword(password);
     if (pErr) errs.password = pErr;
     setErrors(errs);
@@ -52,8 +62,9 @@ export default function LoginPage() {
     if (!validate()) return;
     setLoading(true);
     setAuthError('');
+    setSuccessMsg('');
     try {
-      const result = await login(username, password);
+      const result = await login(identifier.trim().toLowerCase(), password);
 
       const userRole = result.role?.toLowerCase();
       if (userRole === 'user') {
@@ -63,11 +74,14 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error('Login error:', err);
-      let errMsg = 'Đăng nhập thất bại. Vui lòng thử lại.';
-      if (err.message) {
-        errMsg = err.message;
+      if (err.code === 'UserNotConfirmedException') {
+        navigate(ROUTES.VERIFY_OTP, {
+          replace: true,
+          state: { email: err.email || identifier.trim().toLowerCase() },
+        });
+        return;
       }
-      setAuthError(errMsg);
+      setAuthError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -206,7 +220,7 @@ export default function LoginPage() {
                     <button
                       key={acc.username}
                       type="button"
-                      onClick={() => { setUsername(acc.username); setPassword(acc.password); setErrors({}); }}
+                      onClick={() => { setIdentifier(acc.username); setPassword(acc.password); setErrors({}); }}
                       className="
                         flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg
                         border border-blue-200 bg-white
@@ -222,52 +236,66 @@ export default function LoginPage() {
               </div>
             )}
 
+            {successMsg && (
+              <div className="mb-4 px-3.5 py-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 text-sm text-emerald-600 dark:text-emerald-400">
+                {successMsg}
+              </div>
+            )}
+
             {/* Form */}
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
-              {/* Username */}
+              {/* Tên tài khoản hoặc Email */}
               <div className="space-y-1.5">
                 <label
-                  htmlFor="login-username"
+                  htmlFor="login-identifier"
                   className="block text-sm font-medium"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
-                  Tên đăng nhập
+                  Tên tài khoản hoặc Email
                 </label>
                 <input
-                  id="login-username"
+                  id="login-identifier"
                   type="text"
-                  value={username}
-                  onChange={(e) => { setUsername(e.target.value); setErrors(p => ({ ...p, username: '' })); }}
-                  placeholder="admin"
+                  value={identifier}
+                  onChange={(e) => { setIdentifier(e.target.value); setErrors(p => ({ ...p, identifier: '' })); }}
+                  placeholder="ten_tai_khoan hoặc email@gmail.com"
                   autoComplete="username"
                   required
                   className={`
                     w-full px-3.5 py-2.5 rounded-lg text-sm
                     transition-all duration-150
                     focus:outline-none focus:ring-2 focus:ring-primary-500
-                    ${errors.username ? 'ring-2 ring-red-400' : ''}
+                    ${errors.identifier ? 'ring-2 ring-red-400' : ''}
                   `}
                   style={{
                     backgroundColor: 'var(--color-surface)',
                     color: 'var(--color-text-primary)',
-                    border: `1px solid ${errors.username ? '#f87171' : 'var(--color-border)'}`,
+                    border: `1px solid ${errors.identifier ? '#f87171' : 'var(--color-border)'}`,
                   }}
                 />
-                {errors.username && (
-                  <p className="text-xs text-red-500">{errors.username}</p>
+                {errors.identifier && (
+                  <p className="text-xs text-red-500">{errors.identifier}</p>
                 )}
               </div>
 
               {/* Password */}
               <div className="space-y-1.5">
-                <label
-                  htmlFor="login-password"
-                  className="block text-sm font-medium"
-                  style={{ color: 'var(--color-text-primary)' }}
-                >
-                  Mật khẩu
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="login-password"
+                    className="block text-sm font-medium"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    Mật khẩu
+                  </label>
+                  <Link
+                    to={ROUTES.FORGOT_PASSWORD}
+                    className="text-xs text-primary-600 hover:underline font-medium"
+                  >
+                    Quên mật khẩu?
+                  </Link>
+                </div>
                 <div className="relative">
                   <input
                     id="login-password"
@@ -350,7 +378,7 @@ export default function LoginPage() {
               {IS_MOCK ? (
                 <span className="text-amber-500 font-medium">⚠️ Đang sử dụng chế độ cục bộ</span>
               ) : (
-                'Powered by Custom Lambda API'
+                'Powered by Amazon Cognito · SES · SNS'
               )}
             </p>
           </div>

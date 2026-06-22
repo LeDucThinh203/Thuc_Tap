@@ -8,6 +8,8 @@ import axios from 'axios';
 import { API_BASE_URL } from 'constants/api';
 import { getAccessToken, signOut } from 'services/authService';
 
+console.log('🔧 apiClient.js: API_BASE_URL =', API_BASE_URL);
+
 const apiClient = axios.create({
   baseURL:         API_BASE_URL,
   timeout:         15_000,
@@ -19,6 +21,7 @@ const apiClient = axios.create({
 // ── Request interceptor: attach JWT ──────────────────────────
 apiClient.interceptors.request.use(
   async (config) => {
+    console.log('🔧 apiClient request:', config.method.toUpperCase(), config.url, '→ Full URL:', config.baseURL + config.url);
     try {
       const token = await getAccessToken();
       if (token && token !== 'mock-access-token') {
@@ -34,8 +37,12 @@ apiClient.interceptors.request.use(
 
 // ── Response interceptor: handle auth errors ─────────────────
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('🔧 apiClient response:', response.status, response.config.url);
+    return response;
+  },
   async (error) => {
+    console.error('🔧 apiClient error:', error.config?.url, error.message);
     const status = error.response?.status;
 
     if (status === 401) {

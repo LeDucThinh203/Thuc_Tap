@@ -11,6 +11,8 @@ export const ROUTES = {
   ROOT:      '/',
   LOGIN:     '/login',
   REGISTER:  '/register',
+  VERIFY_OTP: '/verify-otp',
+  FORGOT_PASSWORD: '/forgot-password',
   NOT_FOUND: '/404',
 
   // ── Admin routes (/admin/...) ─────────────────────────────

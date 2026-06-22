@@ -23,9 +23,11 @@ import { useAuth }        from 'hooks/useAuth';
 
 // ── Lazy page imports ──────────────────────────────────────────
 // Auth
-const LoginPage     = lazy(() => import('features/auth/LoginPage'));
-const RegisterPage  = lazy(() => import('features/auth/RegisterPage'));
-const NotFoundPage  = lazy(() => import('features/auth/NotFoundPage'));
+const LoginPage         = lazy(() => import('features/auth/LoginPage'));
+const RegisterPage      = lazy(() => import('features/auth/RegisterPage'));
+const VerifyOtpPage     = lazy(() => import('features/auth/VerifyOtpPage'));
+const ForgotPasswordPage = lazy(() => import('features/auth/ForgotPasswordPage'));
+const NotFoundPage      = lazy(() => import('features/auth/NotFoundPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('features/dashboard/DashboardPage'));
@@ -69,6 +71,8 @@ const router = createBrowserRouter([
     children: [
       { path: ROUTES.LOGIN, element: page(LoginPage) },
       { path: ROUTES.REGISTER, element: page(RegisterPage) },
+      { path: ROUTES.VERIFY_OTP, element: page(VerifyOtpPage) },
+      { path: ROUTES.FORGOT_PASSWORD, element: page(ForgotPasswordPage) },
     ],
   },
 

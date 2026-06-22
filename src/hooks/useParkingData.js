@@ -7,6 +7,7 @@ import { getParkingStatus } from 'services/parkingService';
 import { getVehicleHistory } from 'services/vehicleService';
 import { MOCK_SLOTS, MOCK_ZONES, MOCK_STATS, MOCK_TRAFFIC, MOCK_RECENT_VEHICLES } from 'features/dashboard/mockData';
 
+const IS_MOCK = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 const DEFAULT_REFRESH_MS = 30_000; // refresh every 30 seconds
 
 export function useParkingData(refreshInterval = DEFAULT_REFRESH_MS) {
@@ -22,6 +23,20 @@ export function useParkingData(refreshInterval = DEFAULT_REFRESH_MS) {
   const fetchAll = useCallback(async () => {
     try {
       setError(null);
+      
+      if (IS_MOCK) {
+        // Use mock data directly
+        setSlots(MOCK_SLOTS);
+        setZones(MOCK_ZONES);
+        setStats({
+          ...MOCK_STATS,
+          lastUpdated: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        });
+        setTraffic(MOCK_TRAFFIC);
+        setRecentVehicles(MOCK_RECENT_VEHICLES);
+        return;
+      }
+
       const [statusData, historyData] = await Promise.all([
         getParkingStatus(),
         getVehicleHistory()
@@ -93,9 +108,18 @@ export function useParkingData(refreshInterval = DEFAULT_REFRESH_MS) {
     } catch (err) {
       console.error("Parking API failed:", err);
       setError(err.message || "Đã xảy ra lỗi khi tải dữ liệu từ API.");
-      setSlots([]);
-      setZones([]);
-      setStats(null);
+      
+      // Fallback to mock data if API fails
+      if (!IS_MOCK) {
+        setSlots(MOCK_SLOTS);
+        setZones(MOCK_ZONES);
+        setStats({
+          ...MOCK_STATS,
+          lastUpdated: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        });
+        setTraffic(MOCK_TRAFFIC);
+        setRecentVehicles(MOCK_RECENT_VEHICLES);
+      }
     } finally {
       setIsLoading(false);
     }

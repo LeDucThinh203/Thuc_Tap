@@ -5,43 +5,24 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from 'hooks/useAuth';
 import { formatVietnamesePlate } from 'utils/formatters';
-import { validatePlate } from 'utils/validators';
-import { User, Shield, Key, Car, Phone, Mail, Check, AlertTriangle, Loader2 } from 'lucide-react';
-
-// E.164 phone helpers for AWS Cognito
-function toE164(phone) {
-  if (!phone) return '';
-  let cleaned = phone.replace(/\D/g, ''); // Remove all non-digits
-  if (cleaned.startsWith('84')) {
-    return `+${cleaned}`;
-  }
-  if (cleaned.startsWith('0')) {
-    return `+84${cleaned.slice(1)}`;
-  }
-  if (cleaned.length > 0) {
-    return `+${cleaned}`;
-  }
-  return '';
-}
-
-function fromE164(phone) {
-  if (!phone) return '';
-  if (phone.startsWith('+84')) {
-    return `0${phone.slice(3)}`;
-  }
-  if (phone.startsWith('+')) {
-    return phone.slice(1);
-  }
-  return phone;
-}
+import { validatePlate, validateEmail, validateOtp } from 'utils/validators';
+import { User, Shield, Key, Car, Mail, Check, AlertTriangle, Loader2, Send } from 'lucide-react';
 
 export default function UserProfilePage() {
-  const { user, updateProfile, changePassword } = useAuth();
+  const { user, updateProfile, changePassword, sendEmailVerification, verifyEmailUpdate } = useAuth();
   
   // Profile Form State
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [plate, setPlate] = useState('');
+  
+  // Email Verification State
+  const [showEmailVerify, setShowEmailVerify] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
+  const [emailVerifySuccess, setEmailVerifySuccess] = useState('');
+  const [emailVerifyError, setEmailVerifyError] = useState('');
   
   // Status State
   const [profileLoading, setProfileLoading] = useState(false);
@@ -60,8 +41,8 @@ export default function UserProfilePage() {
   // Load user data on mount
   useEffect(() => {
     if (user) {
-      setName(user.name ?? '');
-      setPhone(fromE164(user.phone ?? ''));
+      setUsername(user.username ?? '');
+      setEmail(user.email ?? '');
       setPlate(user.plate ?? '');
     }
   }, [user]);
@@ -69,6 +50,60 @@ export default function UserProfilePage() {
   // Handle license plate formatting on blur
   const handlePlateBlur = () => {
     setPlate(formatVietnamesePlate(plate));
+  };
+
+  // Handle start email update
+  const handleStartEmailUpdate = () => {
+    setNewEmail(email);
+    setShowEmailVerify(true);
+    setEmailVerifySuccess('');
+    setEmailVerifyError('');
+  };
+
+  // Handle send email verification OTP
+  const handleSendEmailOtp = async () => {
+    const emailErr = validateEmail(newEmail);
+    if (emailErr) {
+      setEmailVerifyError(emailErr);
+      return;
+    }
+
+    setEmailVerifyLoading(true);
+    setEmailVerifySuccess('');
+    setEmailVerifyError('');
+
+    try {
+      await sendEmailVerification(newEmail);
+      setEmailVerifySuccess('Mã OTP đã được gửi đến email mới!');
+    } catch (err) {
+      setEmailVerifyError(err.message ?? 'Gửi mã OTP thất bại.');
+    } finally {
+      setEmailVerifyLoading(false);
+    }
+  };
+
+  // Handle verify email update
+  const handleVerifyEmail = async () => {
+    const otpErr = validateOtp(emailOtp);
+    if (otpErr) {
+      setEmailVerifyError(otpErr);
+      return;
+    }
+
+    setEmailVerifyLoading(true);
+    setEmailVerifySuccess('');
+    setEmailVerifyError('');
+
+    try {
+      await verifyEmailUpdate(newEmail, emailOtp);
+      setEmail(newEmail);
+      setShowEmailVerify(false);
+      setProfileSuccess('Cập nhật email thành công!');
+    } catch (err) {
+      setEmailVerifyError(err.message ?? 'Xác thực email thất bại.');
+    } finally {
+      setEmailVerifyLoading(false);
+    }
   };
 
   // Submit Profile Attributes update
@@ -89,12 +124,7 @@ export default function UserProfilePage() {
       // Form attributes payload
       const attrs = {
         'custom:plate': formatVietnamesePlate(plate),
-        'name': name.trim(),
       };
-      
-      if (phone.trim()) {
-        attrs['phone_number'] = toE164(phone.trim());
-      }
 
       await updateProfile(attrs);
       setProfileSuccess('Cập nhật thông tin tài khoản thành công!');
@@ -149,12 +179,12 @@ export default function UserProfilePage() {
         {/* Left column: Summary Card */}
         <div className="md:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm">
           <div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-white text-3xl font-bold shadow-md mb-4">
-            {(name || user?.username || 'U').charAt(0).toUpperCase()}
+            {(username || user?.username || 'U').charAt(0).toUpperCase()}
           </div>
           <h3 className="text-base font-bold text-slate-800 dark:text-white truncate max-w-full">
-            {name || 'Khách hàng'}
+            {username || 'Khách hàng'}
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5 truncate max-w-full">{user?.email}</p>
+          <p className="text-xs text-slate-400 mt-0.5 truncate max-w-full">{email}</p>
           <span className="mt-3 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-[#2563EB] dark:text-[#60A5FA] border border-blue-100 dark:border-blue-900/30 rounded-full text-[11px] font-bold capitalize">
             Khách hàng (User)
           </span>
@@ -162,15 +192,11 @@ export default function UserProfilePage() {
           <div className="w-full border-t border-slate-100 dark:border-slate-800/80 mt-5 pt-4 text-left space-y-3">
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
               <Mail size={14} className="text-slate-400 shrink-0" />
-              <span className="truncate">{user?.email}</span>
+              <span className="truncate">{email}</span>
             </div>
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
               <Car size={14} className="text-slate-400 shrink-0" />
               <span className="font-semibold text-slate-700 dark:text-slate-300">{plate || 'Chưa thiết lập'}</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-              <Phone size={14} className="text-slate-400 shrink-0" />
-              <span>{phone || 'Chưa thiết lập'}</span>
             </div>
           </div>
         </div>
@@ -201,32 +227,113 @@ export default function UserProfilePage() {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Họ tên */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Họ và tên</label>
+                {/* Tên tài khoản (Read-only) */}
+                <div className="space-y-1.5 opacity-70">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Tên tài khoản</label>
                   <input
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    placeholder="Nhập họ và tên..."
-                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
-                  />
-                </div>
-
-                {/* Email (Read-only) */}
-                <div className="space-y-1.5 opacity-70">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Địa chỉ Email (Đăng nhập)</label>
-                  <input
-                    type="email"
-                    value={user?.email ?? ''}
+                    value={username}
                     disabled
                     className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed outline-none"
                   />
                 </div>
 
-                {/* Biển số xe */}
+                {/* Email (Editable with verify) */}
                 <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Địa chỉ Email</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="flex-1 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleStartEmailUpdate}
+                      className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 transition-all"
+                    >
+                      Đổi
+                    </button>
+                  </div>
+                </div>
+
+                {/* Email Verification Modal */}
+                {showEmailVerify && (
+                  <div className="sm:col-span-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    {emailVerifySuccess && (
+                      <div className="flex items-center gap-2.5 px-4 py-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs font-semibold mb-4">
+                        <Check size={16} className="shrink-0" />
+                        <span>{emailVerifySuccess}</span>
+                      </div>
+                    )}
+
+                    {emailVerifyError && (
+                      <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 text-xs font-semibold mb-4">
+                        <AlertTriangle size={16} className="shrink-0" />
+                        <span>{emailVerifyError}</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Email mới</label>
+                        <input
+                          type="email"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          placeholder="email@example.com"
+                          className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Mã OTP</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={emailOtp}
+                            onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ''))}
+                            placeholder="123456"
+                            className="flex-1 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm text-center tracking-[0.3em] font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSendEmailOtp}
+                            disabled={emailVerifyLoading}
+                            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 transition-all disabled:opacity-50"
+                          >
+                            <Send size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setShowEmailVerify(false)}
+                          className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleVerifyEmail}
+                          disabled={emailVerifyLoading}
+                          className="px-4 py-2 bg-[#2563EB] hover:bg-blue-600 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+                        >
+                          {emailVerifyLoading ? 'Đang xác thực...' : 'Xác thực'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Biển số xe */}
+                <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Biển số xe đăng ký</label>
                   <input
                     type="text"
@@ -238,18 +345,6 @@ export default function UserProfilePage() {
                     className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200 font-semibold uppercase"
                   />
                   <p className="text-[10px] text-slate-400">Tự động định dạng (Ví dụ: 51f12345 → 51F-123.45)</p>
-                </div>
-
-                {/* Số điện thoại */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Số điện thoại liên hệ</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Ví dụ: 0912345678"
-                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
-                  />
                 </div>
               </div>
 

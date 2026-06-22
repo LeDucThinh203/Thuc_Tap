@@ -6,10 +6,10 @@
  * Only accessible to admin role via routing protection.
  */
 import { useState, useEffect } from 'react';
-import { getUsers, adminResetPassword, deactivateAccount, reactivateAccount, isAccountDeactivated } from 'services/authService';
+import { getUsers, adminResetPassword, deactivateAccount, reactivateAccount, isAccountDeactivated, deleteAccount, updateUserRole as updateUserRoleAPI } from 'services/authService';
 import { ROLES } from 'constants/roles';
 import { useAuth } from 'hooks/useAuth';
-import { RefreshCw, UserCheck, UserX } from 'lucide-react';
+import { RefreshCw, UserCheck, UserX, Trash } from 'lucide-react';
 
 export default function Role() {
   const { role } = useAuth();
@@ -66,6 +66,31 @@ export default function Role() {
     console.log(user.active ? 'Deactivated' : 'Reactivated', username);
   };
 
+  // Delete user account
+  const deleteUser = async (id, username) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa tài khoản ${username}?`)) return;
+    try {
+      await deleteAccount(username);
+      // Remove from UI
+      setUsers(prev => prev.filter(u => u.id !== id));
+      // Clean up selectedRoles and passwords
+      setSelectedRoles(prev => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+      setNewPasswords(prev => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+      alert('Xóa tài khoản thành công');
+    } catch (e) {
+      console.error('Delete account error:', e);
+      alert(`Xóa tài khoản thất bại: ${e.message}`);
+    }
+  };
+
   const resetPassword = async (username, newPassword) => {
     try {
       await adminResetPassword(username, newPassword);
@@ -77,11 +102,20 @@ export default function Role() {
     }
   };
 
-  const updateUserRole = (id, newRole) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, role: newRole } : u))
-    );
-    console.log('Updated role for user', id, 'to', newRole);
+  const updateUserRole = async (id, newRole) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    try {
+      await updateUserRoleAPI({ account_id: user.id, username: user.username, role: newRole });
+      // Update local UI after successful backend update
+      setUsers(prev =>
+        prev.map(u => (u.id === id ? { ...u, role: newRole } : u))
+      );
+      console.log('Updated role for user', id, 'to', newRole);
+    } catch (e) {
+      console.error('Failed to update role on server:', e);
+      alert('Cập nhật vai trò thất bại: ' + (e.message || e));
+    }
   };
 
   const handleRoleChange = (id, value) => {
@@ -175,6 +209,12 @@ export default function Role() {
                 ) : (
                   <UserCheck size={16} title="Kích hoạt" />
                 )}
+              </button>
+              <button
+                onClick={() => deleteUser(user.id, user.username)}
+                className="p-1 text-red-700 hover:text-red-900 ml-2"
+              >
+                <Trash size={16} title="Xóa tài khoản" />
               </button>
             </td>
           </>
