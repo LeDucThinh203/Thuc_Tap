@@ -76,6 +76,7 @@ function AIChatSkeleton() {
 }
 
 export default function AIChatPage() {
+  // ALL HOOKS MUST BE AT THE TOP, BEFORE ANY RETURNS
   const location = useLocation();
   const [skeletonLoading, setSkeletonLoading] = useState(true);
   const {
@@ -87,34 +88,32 @@ export default function AIChatPage() {
     clearHistory,
     handleSuggestedClick
   } = useChat();
-
-  // Di chuyển các hook lên đầu, trước mọi điều kiện return
   const bottomRef = useRef(null);
   const initializedRef = useRef(false);
 
+  // Skeleton loader timeout
   useEffect(() => {
     const timer = setTimeout(() => setSkeletonLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
-  if (skeletonLoading) {
-    return <AIChatSkeleton />;
-  }
-
-  // Handle initial message passed in location state
+  // Handle initial message from location state
   useEffect(() => {
     if (location.state?.initialMessage && !initializedRef.current) {
       initializedRef.current = true;
       handleSend(location.state.initialMessage);
-      // Clear location state
       window.history.replaceState({}, document.title);
     }
   }, [location.state, handleSend]);
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, skeletonLoading]);
+
+  if (skeletonLoading) {
+    return <AIChatSkeleton />;
+  }
 
   return (
     <div className="page-container h-[calc(100vh-var(--topbar-height)-120px)] flex flex-col gap-4 animate-fade-in text-[14px] leading-[1.6]">
@@ -124,11 +123,11 @@ export default function AIChatPage() {
       <div>
         <h2 className="text-[15px] font-semibold text-[#0F172A]">Trợ lý ảo ParkAI</h2>
         <p className="text-[#475569] text-[13px] mt-0.5">
-          Tra cứu vị trí trống, phân tích lưu lượng, dự đoán khung giờ cao điểm và dọn dẹp lịch sử tiện lợi.
+          Tra cứu vị trí trống, phân tích lưu lượng, dự báo khung giờ cao điểm và dọn dẹp lịch sử tiện lợi.
         </p>
       </div>
 
-      {/* Main Chat Interface Widget (Max 12px border radius, no dark shadow, flat border) */}
+      {/* Main Chat Interface Widget */}
       <div className="flex-1 flex flex-col bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl overflow-hidden min-h-0">
         
         {/* Header chatbox */}
@@ -157,7 +156,7 @@ export default function AIChatPage() {
           
           {/* Right: stats */}
           <div className="text-[13px] text-[#475569] font-medium hidden sm:block">
-            73 slots available <span className="text-[#94A3B8] mx-1">•</span> Zone B has most space
+            73 slots available • Zone B has most space
           </div>
         </div>
 
@@ -230,7 +229,6 @@ export default function AIChatPage() {
           onClear={messages.length > 0 ? clearHistory : null}
           loading={chatLoading}
         />
-
       </div>
     </div>
   );
