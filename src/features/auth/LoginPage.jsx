@@ -335,7 +335,7 @@ export default function LoginPage() {
 
               {/* Auth error */}
               {authError && (
-                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+                <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400" style={{ whiteSpace: 'pre-line' }}>
                   {authError}
                 </div>
               )}

@@ -2,12 +2,13 @@
  * AIChatPage.jsx — Redesigned AI Assistant page.
  * Displays the chat screen utilizing custom subcomponents and the useChat hook.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useChat } from './hooks/useChat';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import TypingIndicator from './components/TypingIndicator';
+import Skeleton from 'components/common/Skeleton';
 
 // Inline CSS style block for keyframe animations (progress bar and pulsing dot)
 const styleBlock = `
@@ -29,17 +30,72 @@ const styleBlock = `
 }
 `;
 
+function AIChatSkeleton() {
+  return (
+    <div className="page-container h-[calc(100vh-var(--topbar-height)-120px)] flex flex-col gap-4 text-[14px] leading-[1.6]">
+      <style>{styleBlock}</style>
+      {/* Page Title Skeleton */}
+      <div>
+        <Skeleton className="h-5 w-40 mb-1" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+      {/* Main Chat Interface Skeleton */}
+      <div className="flex-1 flex flex-col bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl overflow-hidden min-h-0">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E2E8F0] bg-[#FFFFFF] select-none shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Skeleton className="w-8 h-8 rounded-md" />
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1.5">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-40" />
+              </div>
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-64 hidden sm:block" />
+        </div>
+        {/* Message area skeleton */}
+        <div className="flex-1 overflow-y-auto p-4 bg-[#F8FAFC] flex flex-col gap-4 min-h-0">
+          <div className="flex flex-col items-center justify-center text-center p-6 my-auto select-none w-full">
+            <Skeleton className="w-12 h-12 rounded-lg mb-4" />
+            <Skeleton className="h-3 w-48 mb-2" />
+            <Skeleton className="h-5 w-72 mb-8" />
+            <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
+              {[1,2,3,4].map(i => (
+                <Skeleton key={i} className="h-16 w-full rounded-[6px]" />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Input skeleton */}
+        <Skeleton className="h-20 w-full" />
+      </div>
+    </div>
+  );
+}
+
 export default function AIChatPage() {
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
   const {
     messages,
     input,
     setInput,
-    loading,
+    loading: chatLoading,
     handleSend,
     clearHistory,
     handleSuggestedClick
   } = useChat();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <AIChatSkeleton />;
+  }
 
   const bottomRef = useRef(null);
   const initializedRef = useRef(false);

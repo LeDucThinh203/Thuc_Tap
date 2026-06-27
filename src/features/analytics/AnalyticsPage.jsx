@@ -2,9 +2,11 @@
  * AnalyticsPage.jsx — Traffic charts, forecasts, and peak-hour heatmap.
  * TODO: Wire in real API_ENDPOINTS.ANALYTICS data.
  */
+import { useState, useEffect } from 'react';
 import Card      from 'components/common/Card';
 import BarChart  from 'components/charts/BarChart';
 import LineChart from 'components/charts/LineChart';
+import Skeleton from 'components/common/Skeleton';
 
 const WEEKLY_DATA = [
   { label: 'T2', value: 320 }, { label: 'T3', value: 450 },
@@ -21,7 +23,47 @@ const HOURLY_DATA = [
   { label: '22h', value: 15 },
 ];
 
+function AnalyticsSkeleton() {
+  return (
+    <div className="page-container flex flex-col gap-6">
+      <div>
+        <Skeleton className="h-8 w-32 mb-2" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card">
+          <Skeleton className="h-6 w-40 mb-2" />
+          <Skeleton className="h-4 w-64 mb-4" />
+          <Skeleton className="h-[200px] w-full" />
+        </div>
+        <div className="card">
+          <Skeleton className="h-6 w-40 mb-2" />
+          <Skeleton className="h-4 w-64 mb-4" />
+          <Skeleton className="h-[200px] w-full" />
+        </div>
+      </div>
+
+      <div className="card">
+        <Skeleton className="h-6 w-40 mb-2" />
+        <Skeleton className="h-4 w-64 mb-4" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <AnalyticsSkeleton />;
+  }
+
   return (
     <div className="page-container flex flex-col gap-6 animate-fade-in">
       <div>

@@ -10,12 +10,98 @@ import ChatMessage from 'features/ai-assistant/components/ChatMessage';
 import ChatInput from 'features/ai-assistant/components/ChatInput';
 import TypingIndicator from 'features/ai-assistant/components/TypingIndicator';
 import { MessageSquare, RefreshCw } from 'lucide-react';
+import Skeleton from 'components/common/Skeleton';
+
+function UserDashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 min-h-screen text-[14px] leading-[1.6]">
+      {/* Main Grid: Responsive 2 Columns on Desktop (>768px), stack on Mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+        
+        {/* Left Column (Hero + Zones) */}
+        <div className="md:col-span-7 flex flex-col gap-6">
+          
+          {/* Hero Section Card Skeleton */}
+          <div className="bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#2563eb] rounded-2xl p-6 flex flex-col items-center text-center relative overflow-hidden">
+            <div className="absolute top-4 right-4 flex items-center gap-1">
+              <Skeleton className="h-3 w-20 bg-blue-400/30" />
+            </div>
+            <Skeleton className="h-3 w-40 bg-blue-400/30 mb-4" />
+            <Skeleton className="h-16 w-40 bg-blue-400/30 mb-2" />
+            <Skeleton className="h-6 w-32 bg-blue-400/30 mb-6" />
+            <Skeleton className="h-2 w-full bg-blue-400/30 mb-2" />
+            <div className="w-full flex justify-between">
+              <Skeleton className="h-3 w-28 bg-blue-400/30" />
+              <Skeleton className="h-3 w-28 bg-blue-400/30" />
+            </div>
+          </div>
+
+          {/* Zones list Skeleton */}
+          <div className="flex flex-col gap-2.5">
+            <Skeleton className="h-4 w-32" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                  <Skeleton className="h-2 w-full" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick AI chat widget (Mobile only) Skeleton */}
+          <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 md:hidden">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-5" />
+              <Skeleton className="h-5 w-28" />
+            </div>
+            <Skeleton className="h-12 w-full" />
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Column (AI Chat - Visible on Desktop only) Skeleton */}
+        <div className="hidden md:flex md:col-span-5 flex-col bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl overflow-hidden h-[calc(100vh-var(--topbar-height)-90px)] min-h-[480px]">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#E2E8F0]">
+            <Skeleton className="w-8 h-8 rounded-md" />
+            <div className="flex flex-col gap-1">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+          <div className="flex-1 p-4 flex flex-col gap-4">
+            <div className="flex flex-col items-center justify-center p-6 my-auto">
+              <Skeleton className="w-10 h-10 rounded-lg mb-3" />
+              <Skeleton className="h-3 w-40 mb-1" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <Skeleton className="h-20 w-full" />
+        </div>
+
+      </div>
+    </div>
+  );
+}
 
 export default function UserDashboardPage() {
+  // ALL React hooks MUST be called FIRST, before any conditional returns!
   const navigate = useNavigate();
   const { slots, zones, stats, isLoading, refresh } = useParkingData();
   const [updateTime, setUpdateTime] = useState('');
-
+  
   // Embedded chat state for desktop view
   const {
     messages,
@@ -42,6 +128,11 @@ export default function UserDashboardPage() {
       setUpdateTime(`${pad(now.getHours())}:${pad(now.getMinutes())}`);
     }
   }, [stats]);
+
+  // Now the conditional return comes AFTER all hooks are called!
+  if (isLoading) {
+    return <UserDashboardSkeleton />;
+  }
 
   const total = stats?.total ?? 0;
   const available = stats?.available ?? 0;

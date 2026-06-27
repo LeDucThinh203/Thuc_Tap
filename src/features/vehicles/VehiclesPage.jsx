@@ -5,7 +5,48 @@ import { getVehicleHistory } from 'services/vehicleService';
 import FilterBar from './components/FilterBar';
 import TableRow from './components/TableRow';
 import Pagination from './components/Pagination';
-import Spinner from 'components/common/Spinner';
+import Skeleton from 'components/common/Skeleton';
+
+function VehiclesSkeleton() {
+  return (
+    <div className="page-container flex flex-col gap-6 text-[14px] leading-[1.6]">
+      {/* Title Header */}
+      <div>
+        <Skeleton className="h-7 w-40 mb-2" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+
+      {/* Filters Skeleton */}
+      <div className="card">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl overflow-hidden">
+        <Skeleton className="h-12 w-full" />
+        <div className="space-y-3 p-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-4">
+              <Skeleton className="h-4 w-8 hidden md:block" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-24 hidden sm:block" />
+              <Skeleton className="h-4 w-20 hidden md:block" />
+              <Skeleton className="h-8 w-12" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-12 w-full mt-4" />
+      </div>
+    </div>
+  );
+}
 
 export default function VehiclesPage() {
   const location = useLocation();
@@ -248,10 +289,11 @@ export default function VehiclesPage() {
       />
 
       {/* Row 2 — Data table card */}
-      <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl overflow-hidden min-h-0 flex flex-col">
-        {loading ? (
-          <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-        ) : error ? (
+      {loading ? (
+        <VehiclesSkeleton />
+      ) : (
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl overflow-hidden min-h-0 flex flex-col">
+          {error ? (
           <div className="py-16 text-center text-red-500 font-semibold select-none flex flex-col items-center justify-center gap-2">
             <span>⚠️ {error}</span>
             <button 
@@ -323,17 +365,18 @@ export default function VehiclesPage() {
           </div>
         )}
 
-        {/* Pagination bar */}
-        {!loading && !error && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredAndSortedRecords.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-          />
-        )}
-      </div>
+          {/* Pagination bar */}
+          {!error && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredAndSortedRecords.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

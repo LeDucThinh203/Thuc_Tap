@@ -20,6 +20,7 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -54,7 +55,7 @@ export default function ForgotPasswordPage() {
     try {
       await forgotPassword(email);
       setStep(2);
-      setSuccess('Mã OTP đã được gửi đến email đã đăng ký.');
+      setSuccess('Mã OTP đã được gửi đến email đã đăng ký. Hãy kiểm tra thùng rác nếu không có!');
     } catch (err) {
       setAuthError(err.message || 'Gửi OTP thất bại.');
     } finally {
@@ -240,20 +241,25 @@ export default function ForgotPasswordPage() {
                   <label htmlFor="reset-confirm-pwd" className="block text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
                     Xác nhận mật khẩu
                   </label>
-                  <input
-                    id="reset-confirm-pwd"
-                    type="password"
-                    value={confirmPwd}
-                    onChange={(e) => { setConfirmPwd(e.target.value); setErrors((p) => ({ ...p, confirmPwd: '' })); }}
-                    placeholder="Nhập lại mật khẩu mới"
-                    autoComplete="new-password"
-                    className={`w-full px-3.5 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.confirmPwd ? 'ring-2 ring-red-400' : ''}`}
-                    style={{
-                      backgroundColor: 'var(--color-surface)',
-                      color: 'var(--color-text-primary)',
-                      border: `1px solid ${errors.confirmPwd ? '#f87171' : 'var(--color-border)'}`,
-                    }}
-                  />
+                  <div className="relative">
+                    <input
+                      id="reset-confirm-pwd"
+                      type={showConfirmPwd ? 'text' : 'password'}
+                      value={confirmPwd}
+                      onChange={(e) => { setConfirmPwd(e.target.value); setErrors((p) => ({ ...p, confirmPwd: '' })); }}
+                      placeholder="Nhập lại mật khẩu mới"
+                      autoComplete="new-password"
+                      className={`w-full px-3.5 pr-10 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.confirmPwd ? 'ring-2 ring-red-400' : ''}`}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text-primary)',
+                        border: `1px solid ${errors.confirmPwd ? '#f87171' : 'var(--color-border)'}`,
+                      }}
+                    />
+                    <button type="button" onClick={() => setShowConfirmPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-muted)' }}>
+                      {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   {errors.confirmPwd && <p className="text-xs text-red-500">{errors.confirmPwd}</p>}
                 </div>
 

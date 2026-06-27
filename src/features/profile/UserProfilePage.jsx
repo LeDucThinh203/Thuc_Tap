@@ -6,10 +6,79 @@ import { useState, useEffect } from 'react';
 import { useAuth } from 'hooks/useAuth';
 import { formatVietnamesePlate } from 'utils/formatters';
 import { validatePlate, validateEmail, validateOtp } from 'utils/validators';
-import { User, Shield, Key, Car, Mail, Check, AlertTriangle, Loader2, Send } from 'lucide-react';
+import { User, Shield, Key, Car, Mail, Check, AlertTriangle, Loader2, Send, Eye, EyeOff } from 'lucide-react';
+import Skeleton from 'components/common/Skeleton';
+
+function UserProfileSkeleton() {
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="border-b border-slate-200 pb-4 select-none">
+        <Skeleton className="h-7 w-40 mb-2" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        {/* Left column skeleton */}
+        <div className="md:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm">
+          <Skeleton className="w-20 h-20 rounded-full mb-4" />
+          <Skeleton className="h-5 w-32 mb-2" />
+          <Skeleton className="h-4 w-48 mb-3" />
+          <Skeleton className="h-6 w-36 mb-5" />
+          <div className="w-full border-t border-slate-100 mt-5 pt-4 text-left space-y-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
+        </div>
+        {/* Right column skeleton */}
+        <div className="md:col-span-2 space-y-6">
+          {/* Panel 1 */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center gap-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-36" />
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full sm:col-span-2" />
+              </div>
+              <div className="pt-2 flex justify-end">
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          </div>
+          {/* Panel 2 */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center gap-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="pt-2 flex justify-end">
+                <Skeleton className="h-10 w-36" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function UserProfilePage() {
   const { user, updateProfile, changePassword, sendEmailVerification, verifyEmailUpdate } = useAuth();
+  const [loading, setLoading] = useState(true);
   
   // Profile Form State
   const [username, setUsername] = useState('');
@@ -37,15 +106,24 @@ export default function UserProfilePage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [showOldPwd, setShowOldPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
   // Load user data on mount
   useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
     if (user) {
       setUsername(user.username ?? '');
       setEmail(user.email ?? '');
       setPlate(user.plate ?? '');
     }
+    return () => clearTimeout(timer);
   }, [user]);
+
+  if (loading) {
+    return <UserProfileSkeleton />;
+  }
 
   // Handle license plate formatting on blur
   const handlePlateBlur = () => {
@@ -393,40 +471,55 @@ export default function UserProfilePage() {
                 {/* Mật khẩu cũ */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Mật khẩu hiện tại</label>
-                  <input
-                    type="password"
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showOldPwd ? 'text' : 'password'}
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="w-full pl-3.5 pr-10 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
+                    />
+                    <button type="button" onClick={() => setShowOldPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      {showOldPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Mật khẩu mới */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Mật khẩu mới</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPwd ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="w-full pl-3.5 pr-10 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
+                    />
+                    <button type="button" onClick={() => setShowNewPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      {showNewPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Xác nhận mật khẩu mới */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Xác nhận mật khẩu mới</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPwd ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="w-full pl-3.5 pr-10 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#2563EB] dark:text-white transition-all duration-200"
+                    />
+                    <button type="button" onClick={() => setShowConfirmPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
               </div>
 

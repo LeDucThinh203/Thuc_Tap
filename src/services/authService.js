@@ -31,18 +31,17 @@ const API_URL =
   import.meta.env.VITE_AUTH_API_URL ||
   'https://hmnbkhu2atupibr7objnnvk4qm0vuytd.lambda-url.ap-southeast-1.on.aws/';
 
-const ROLE_OVERRIDE_KEY = 'sp-role-overrides';
-
 const COGNITO_ERROR_MESSAGES = {
   UsernameExistsException: 'Email đã được đăng ký.',
   InvalidPasswordException: 'Mật khẩu không đủ điều kiện bảo mật.',
   CodeMismatchException: 'Mã OTP không đúng. Vui lòng thử lại.',
   ExpiredCodeException: 'Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.',
   UserNotConfirmedException: 'Tài khoản chưa xác thực. Vui lòng nhập mã OTP.',
-  UserNotFoundException: 'Không tìm thấy tài khoản với email hoặc tên tài khoản này.',
+  UserNotFoundException: 'Tài khoản hoặc mật khẩu không đúng.',
   NotAuthorizedException: 'Tài khoản hoặc mật khẩu không đúng.',
   LimitExceededException: 'Quá nhiều lần thử. Vui lòng đợi vài phút rồi thử lại.',
   InvalidParameterException: 'Thông tin không hợp lệ. Kiểm tra lại email.',
+  UserAlreadyAuthenticatedException: 'Đã có người dùng đăng nhập. Vui lòng đăng xuất trước.',
 };
 
 function mapCognitoError(error) {
@@ -56,39 +55,6 @@ function mapCognitoError(error) {
   mapped.code = error?.name;
   mapped.original = error;
   return mapped;
-}
-
-function getRoleOverrides() {
-  try {
-    const stored = localStorage.getItem(ROLE_OVERRIDE_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-}
-
-function getRoleOverride(username) {
-  if (!username) return null;
-  return getRoleOverrides()[username] || null;
-}
-
-function setRoleOverride(username, role) {
-  if (!username || !role) return;
-  const overrides = getRoleOverrides();
-  overrides[username] = role.toLowerCase();
-  localStorage.setItem(ROLE_OVERRIDE_KEY, JSON.stringify(overrides));
-}
-
-function clearRoleOverride(username) {
-  if (!username) return;
-  const overrides = getRoleOverrides();
-  if (!(username in overrides)) return;
-  delete overrides[username];
-  localStorage.setItem(ROLE_OVERRIDE_KEY, JSON.stringify(overrides));
-}
-
-function resolveRole(username, role) {
-  return (getRoleOverride(username) || role || ROLES.USER).toLowerCase();
 }
 
 function extractRoleFromSession(session) {
@@ -118,8 +84,8 @@ async function buildAuthUser(cognitoUser, attrs, session) {
   // Lấy thông tin từ DynamoDB
   const dbAccount = await getAccountFromDB(cognitoUser.username);
   
-  // Ưu tiên role từ DB, nếu không có thì dùng Cognito hoặc override
-  const role = dbAccount?.role || resolveRole(cognitoUser.username, extractRoleFromSession(session));
+  // Ưu tiên role từ Cognito JWT (cognito:groups)
+  const role = extractRoleFromSession(session);
   
   return {
     username: cognitoUser.username,
@@ -128,7 +94,7 @@ async function buildAuthUser(cognitoUser, attrs, session) {
     name: attrs.name || attrs.email || cognitoUser.username,
     plate: attrs['custom:plate'] || '',
     role,
-    account_id: dbAccount?.account_id || cognitoUser.userId || cognitoUser.username,
+    account_id: dbAccount?.account_id || cognitoUser.username,
     // Thêm thông tin từ DB
     dbAccount: dbAccount,
   };
@@ -152,6 +118,22 @@ async function parseErrorMessage(res, fallbackMessage) {
 export async function signIn(usernameOrEmail, password) {
   const normalizedInput = usernameOrEmail.trim().toLowerCase();
   
+  // KIỂM TRA TRẠNG THÁI TÀI KHOẢN TRƯỚC KHI ĐĂNG NHẬP
+  let accountStatus = null;
+  try {
+    const users = await getUsers();
+    accountStatus = users.find(u => 
+      u.username.toLowerCase() === normalizedInput || 
+      u.email?.toLowerCase() === normalizedInput
+    );
+  } catch (error) {
+    console.warn('Không thể kiểm tra trạng thái tài khoản:', error);
+  }
+
+  if (accountStatus && accountStatus.active === false) {
+    throw new Error('Tài khoản đã bị vô hiệu, vui lòng liên hệ Quản trị viên.');
+  }
+
   try {
     // Đăng nhập với Cognito
     const result = await amplifySignIn({ username: normalizedInput, password });
@@ -176,12 +158,6 @@ export async function signIn(usernameOrEmail, password) {
         await amplifySignOut();
         throw new Error('Tài khoản không tồn tại trong hệ thống.');
       }
-      
-      // Kiểm tra tài khoản có bị vô hiệu không
-      if (isAccountDeactivated(session.user.email || normalizedInput)) {
-        await amplifySignOut();
-        throw new Error('Tài khoản đã bị vô hiệu, vui lòng liên hệ Quản trị viên.');
-      }
     }
 
     return {
@@ -191,7 +167,54 @@ export async function signIn(usernameOrEmail, password) {
       role: session.role,
     };
   } catch (error) {
+    // Nếu lỗi là NotAuthorizedException và chúng ta không kiểm tra được trạng thái,
+    // có thể tài khoản bị vô hiệu hoặc mật khẩu sai
+    if ((error.name === 'NotAuthorizedException' || error.code === 'NotAuthorizedException') && !accountStatus) {
+      throw new Error('Tài khoản hoặc mật khẩu không đúng, hoặc tài khoản đã bị vô hiệu.');
+    }
+
+    // Nếu lỗi là UserAlreadyAuthenticatedException, thử đăng xuất rồi đăng nhập lại
+    if (error.name === 'UserAlreadyAuthenticatedException' || error.code === 'UserAlreadyAuthenticatedException') {
+      try {
+        await amplifySignOut();
+        // Thử đăng nhập lại sau khi đăng xuất
+        const result = await amplifySignIn({ username: normalizedInput, password });
+
+        if (result.nextStep?.signInStep === 'CONFIRM_SIGN_UP') {
+          const err = new Error('Tài khoản chưa xác thực OTP.');
+          err.code = 'UserNotConfirmedException';
+          err.email = normalizedInput;
+          throw err;
+        }
+
+        if (!result.isSignedIn) {
+          throw new Error('Đăng nhập chưa hoàn tất. Vui lòng thử lại.');
+        }
+
+        const session = await getCurrentUser();
+        
+        // Kiểm tra tài khoản có tồn tại trong DynamoDB không
+        if (session?.user) {
+          const dbAccount = await getAccountFromDB(session.user.username);
+          if (!dbAccount) {
+            await amplifySignOut();
+            throw new Error('Tài khoản không tồn tại trong hệ thống.');
+          }
+        }
+
+        return {
+          isSignedIn: true,
+          user: session.user,
+          groups: [session.role],
+          role: session.role,
+        };
+      } catch (signInAgainError) {
+        throw mapCognitoError(signInAgainError);
+      }
+    }
+
     if (error.code === 'UserNotConfirmedException') throw error;
+    if (error.message === 'Tài khoản đã bị vô hiệu, vui lòng liên hệ Quản trị viên.') throw error;
     throw mapCognitoError(error);
   }
 }
@@ -209,7 +232,7 @@ export async function signOut() {
  */
 export async function signUp(email, password, name) {
   const normalizedEmail = email.trim().toLowerCase();
-  const username = name.trim().toLowerCase(); // Dùng "Tên tài khoản" làm username
+  const username = name.trim().toLowerCase(); // Dùng tên tài khoản làm username
   
   console.log('signUp called with:', { normalizedEmail, name, username });
 
@@ -364,12 +387,11 @@ export async function getCurrentUser() {
       fetchAuthSession(),
     ]);
     const authUser = await buildAuthUser(cognitoUser, attrs, session);
-    const normalizedRole = resolveRole(authUser.username, authUser.role);
 
     return {
       email: authUser.email,
-      role: normalizedRole,
-      user: { ...authUser, role: normalizedRole },
+      role: authUser.role,
+      user: authUser,
     };
   } catch {
     return null;
@@ -449,8 +471,8 @@ export async function getUsers() {
       id: item.account_id || item.username,
       username: item.username,
       email: item.email,
-      role: resolveRole(item.username, item.role),
-      active: !isAccountDeactivated(item.username),
+      role: item.role?.toLowerCase() || ROLES.USER,
+      active: item.active !== false,
     }));
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -534,7 +556,6 @@ export async function deleteAccount(username) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.message || 'Xóa tài khoản thất bại');
     }
-    clearRoleOverride(username);
     return { status: 'success' };
   } catch (e) {
     console.error('deleteAccount error:', e);
@@ -552,27 +573,29 @@ export async function updateUserRole({ account_id, username, role }) {
     });
     if (!res.ok) {
       const errorMessage = await parseErrorMessage(res, 'Cập nhật vai trò thất bại');
-      const isReservedKeywordError =
-        res.status >= 500 &&
-        /reserved keyword|invalid updateexpression|attribute name is a reserved keyword/i.test(
-          errorMessage
-        );
-
-      if (isReservedKeywordError) {
-        setRoleOverride(username, normalizedRole);
-        return {
-          status: 'success',
-          mode: 'local_fallback',
-          message:
-            'Backend đang lỗi cập nhật role, ứng dụng đã lưu role cục bộ trên trình duyệt này.',
-        };
-      }
       throw new Error(errorMessage || 'Cập nhật vai trò thất bại');
     }
-    clearRoleOverride(username);
     return { status: 'success', mode: 'server' };
   } catch (e) {
     console.error('updateUserRole error:', e);
+    throw e;
+  }
+}
+
+export async function toggleAccountActive({ account_id, username, active }) {
+  try {
+    const res = await fetch(`${API_URL}toggle-active`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account_id, username, active }),
+    });
+    if (!res.ok) {
+      const errorMessage = await parseErrorMessage(res, 'Cập nhật trạng thái tài khoản thất bại');
+      throw new Error(errorMessage || 'Cập nhật trạng thái tài khoản thất bại');
+    }
+    return { status: 'success' };
+  } catch (e) {
+    console.error('toggleAccountActive error:', e);
     throw e;
   }
 }

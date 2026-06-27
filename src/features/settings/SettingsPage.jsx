@@ -2,11 +2,49 @@
  * SettingsPage.jsx — System settings (admin only).
  * TODO: Wire in real settings API.
  */
+import { useState, useEffect } from 'react';
 import Card from 'components/common/Card';
 import Button from 'components/common/Button';
 import Input from 'components/common/Input';
+import Skeleton from 'components/common/Skeleton';
+
+function SettingsSkeleton() {
+  return (
+    <div className="page-container flex flex-col gap-6">
+      <div>
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <div className="card">
+        <Skeleton className="h-6 w-36 mb-4" />
+        <div className="flex flex-col gap-4 max-w-md">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </div>
+      <div className="card">
+        <Skeleton className="h-6 w-40 mb-4" />
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-4 w-96" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <SettingsSkeleton />;
+  }
+
   return (
     <div className="page-container flex flex-col gap-6 animate-fade-in">
       <div>
