@@ -77,7 +77,7 @@ function AIChatSkeleton() {
 
 export default function AIChatPage() {
   const location = useLocation();
-  const [loading, setLoading] = useState(true);
+  const [skeletonLoading, setSkeletonLoading] = useState(true);
   const {
     messages,
     input,
@@ -88,17 +88,18 @@ export default function AIChatPage() {
     handleSuggestedClick
   } = useChat();
 
+  // Di chuyển các hook lên đầu, trước mọi điều kiện return
+  const bottomRef = useRef(null);
+  const initializedRef = useRef(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
+    const timer = setTimeout(() => setSkeletonLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
-  if (loading) {
+  if (skeletonLoading) {
     return <AIChatSkeleton />;
   }
-
-  const bottomRef = useRef(null);
-  const initializedRef = useRef(false);
 
   // Handle initial message passed in location state
   useEffect(() => {
@@ -113,7 +114,7 @@ export default function AIChatPage() {
   // Auto scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages, skeletonLoading]);
 
   return (
     <div className="page-container h-[calc(100vh-var(--topbar-height)-120px)] flex flex-col gap-4 animate-fade-in text-[14px] leading-[1.6]">
@@ -213,7 +214,7 @@ export default function AIChatPage() {
               {messages.map((msg, i) => (
                 <ChatMessage key={i} {...msg} />
               ))}
-              {loading && messages[messages.length - 1]?.content === '' && (
+              {chatLoading && messages[messages.length - 1]?.content === '' && (
                 <TypingIndicator />
               )}
             </>
@@ -227,7 +228,7 @@ export default function AIChatPage() {
           onChange={setInput}
           onSend={() => handleSend()}
           onClear={messages.length > 0 ? clearHistory : null}
-          loading={loading}
+          loading={chatLoading}
         />
 
       </div>
