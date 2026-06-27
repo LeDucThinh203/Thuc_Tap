@@ -4,24 +4,26 @@
   publish = "dist"
   [build.environment]
   VITE_USE_MOCK_DATA = "false"
-  VITE_API_BASE_URL = "https://ebhguaykmc.execute-api.ap-southeast-1.amazonaws.com"
+  VITE_API_BASE_URL = "/api"
 
 [dev]
   command = "npm run dev"
   port = 5173
 
-# Proxy API during local dev (optional)
+# Proxy API cho Netlify: forward /api/* tới API Gateway
 [[redirects]]
   from = "/api/*"
-  to = "http://localhost:4000/:splat"
+  to = "https://ebhguaykmc.execute-api.ap-southeast-1.amazonaws.com/:splat"
   status = 200
+  force = true
+  headers = {Access-Control-Allow-Origin = "*"}
 
 [[redirects]]
   from = "/assets/*"
   to = "/assets/:splat"
   status = 200
 
-# SPA fallback – route all non‑file requests to index.html
+# SPA fallback – route all non-file requests to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
